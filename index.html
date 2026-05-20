@@ -1,256 +1,360 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- Define character encoding for the document -->
     <meta charset="UTF-8">
-    <!-- Ensure the page is responsive on mobile devices -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- Title displayed on the browser tab -->
     <title>AudioXedit Workspace</title>
     <style>
-        /* CSS Reset: Removes default browser spacing so our layout is consistent */
+        /* CSS Reset */
         * {
             margin: 0;
             padding: 0;
-            box-sizing: border-box; /* Includes padding and borders in the element's total width/height */
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; /* Sets a clean, modern font */
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            cursor: none !important; 
         }
 
-        /* Base Theme: Defines reusable color variables for easy theme management */
         :root {
-            --persian-blue: #1C39BB; /* Primary dark blue */
-            --persian-blue-glow: rgba(28, 57, 187, 0.5); /* Semi-transparent blue for shadows */
-            
-            /* UPDATED TO TRUE ROSE PINK */
-            --rose-pink: #FF5080; /* Elegant Rose Pink */
-            --rose-pink-glow: rgba(255, 80, 128, 0.5); /* Semi-transparent rose pink for shadows */
-            
-            --bg-dark: #070913; /* Very dark blue/black background color */
+            --persian-blue: #1C39BB; 
+            --persian-blue-glow: rgba(28, 57, 187, 0.5); 
+            --rose-pink: #FF5080; 
+            --rose-pink-glow: rgba(255, 80, 128, 0.5); 
+            --bg-dark: #070913; 
         }
 
-        /* Body Styling: Sets the foundation for the entire page */
         body {
-            min-height: 100vh; /* Ensures the body takes up at least the full screen height */
-            background-color: var(--bg-dark); /* Applies our dark background variable */
-            color: #ffffff; /* Sets default text color to white */
-            overflow-x: hidden; /* Prevents horizontal scrolling if elements get pushed off-screen */
-            position: relative; /* Allows child elements to be positioned absolutely relative to the body */
+            min-height: 100vh; 
+            background-color: var(--bg-dark); 
+            color: #ffffff; 
+            overflow-x: hidden; 
+            position: relative; 
+            user-select: none; 
         }
 
-        /* Glass Header Section: The frosted navigation bar at the top */
+        /* =========================================
+           CUSTOM CURSOR (Small Red Dot)
+           ========================================= */
+        .cursor-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none; 
+            z-index: 10000; 
+        }
+
+        .cursor-visual {
+            width: 8px; 
+            height: 8px;
+            background-color: #ff0000; 
+            border-radius: 50%;
+            transform: translate(-50%, -50%); 
+            box-shadow: 0 0 10px #ff0000; 
+            transition: width 0.3s ease, height 0.3s ease, background-color 0.3s ease, border 0.3s ease, backdrop-filter 0.3s ease;
+        }
+
+        .cursor-wrapper.glass-mode .cursor-visual {
+            width: 40px; 
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            backdrop-filter: blur(6px); 
+            -webkit-backdrop-filter: blur(6px);
+            box-shadow: none;
+        }
+
+        /* Glass Header Section */
         .glass-header {
-            position: fixed; /* Keeps the header pinned to the top even when scrolling */
+            position: fixed; 
             top: 0;
             left: 0;
-            width: 100%; /* Spans the entire width of the screen */
-            height: 80px; /* Fixed height for the header */
-            display: flex; /* Uses Flexbox to align items inside */
-            justify-content: space-between; /* Pushes the logo to the left and nav to the right */
-            align-items: center; /* Vertically centers the items inside the header */
-            padding: 0 60px; /* Adds space on the left and right sides */
-            
-            background: rgba(7, 9, 19, 0.6); /* Semi-transparent dark background */
-            backdrop-filter: blur(16px); /* Creates the frosted glass blur effect behind the header */
-            -webkit-backdrop-filter: blur(16px); /* Safari support for the blur effect */
-            border-bottom: 1px solid rgba(255, 80, 128, 0.15); /* Subtle rose pink line at the bottom */
-            z-index: 1000; /* Ensures the header sits on top of all other elements (like the canvas) */
+            width: 100%; 
+            height: 80px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 60px; 
+            background: rgba(7, 9, 19, 0.6); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px); 
+            border-bottom: 1px solid rgba(255, 80, 128, 0.15); 
+            z-index: 1000; 
         }
 
-        /* Brand Logo Styling */
         .brand-logo {
-            font-size: 1.6rem; /* Large text size */
-            font-weight: 700; /* Bold text */
-            color: #ffffff; /* White text */
-            text-decoration: none; /* Removes the default underline from the link */
-            letter-spacing: 1px; /* Spreads the letters slightly apart */
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            color: #ffffff; 
+            text-decoration: none; 
+            letter-spacing: 1px; 
         }
+        .brand-logo span { color: var(--rose-pink); }
 
-        /* Targets specifically the 'X' inside the brand logo */
-        .brand-logo span {
-            color: var(--rose-pink); /* Colors the 'X' rose pink */
-        }
+        .header-nav { display: flex; align-items: center; }
 
-        /* Navigation container inside the header */
-        .header-nav {
-            display: flex; /* Uses Flexbox */
-            align-items: center; /* Vertically centers the button */
-        }
-
-        /* Connect Us Button Styling */
         .btn-connect-header {
-            padding: 10px 24px; /* Inner spacing: top/bottom 10px, left/right 24px */
-            background: transparent; /* No fill color initially */
-            border: 1px solid var(--rose-pink); /* Rose Pink outline */
-            color: #ffffff; /* White text */
-            text-decoration: none; /* Removes underline */
-            border-radius: 30px; /* Rounds the corners of the button */
-            font-size: 0.9rem; /* Slightly smaller text */
-            font-weight: 600; /* Semi-bold text */
-            transition: all 0.3s ease; /* Smoothly animates hover changes over 0.3 seconds */
-            box-shadow: inset 0 0 10px rgba(255, 80, 128, 0.1); /* Very faint inner rose pink glow */
+            padding: 10px 24px; 
+            background: transparent; 
+            border: 1px solid var(--rose-pink); 
+            color: #ffffff; 
+            text-decoration: none; 
+            border-radius: 30px; 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            transition: all 0.3s ease; 
+            box-shadow: inset 0 0 10px rgba(255, 80, 128, 0.1); 
         }
-
-        /* Hover effect for the Connect Us button */
         .btn-connect-header:hover {
-            background: var(--rose-pink); /* Fills the button with solid rose pink */
-            box-shadow: 0 0 20px var(--rose-pink-glow); /* Adds an outer rose pink glow */
-            color: #000; /* Changes text to black for contrast */
+            background: var(--rose-pink); 
+            box-shadow: 0 0 20px var(--rose-pink-glow); 
+            color: #000; 
         }
 
-        /* Physics Canvas: The full-screen background drawing area */
+        /* =========================================
+           CORNER CASSETTE IMAGE
+           ========================================= */
+        .bg-cassette-wrapper {
+            position: fixed;
+            top: 100px; /* Below the header */
+            left: 60px; /* Anchors to the upper left corner, aligned with logo */
+            width: 280px; 
+            height: 280px;
+            z-index: 5; /* This ensures it stays BEHIND the text container (z-index: 10) */
+            pointer-events: none; 
+            animation: floatCorner 8s infinite ease-in-out;
+        }
+
+        .bg-cassette-wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain; 
+            filter: drop-shadow(0px 15px 25px rgba(0, 0, 0, 0.7)); 
+        }
+
+        @keyframes floatCorner {
+            0%   { transform: translate(0, 0) rotate(-12deg) scale(1); }
+            33%  { transform: translate(15px, 10px) rotate(-15deg) scale(1.05); }
+            66%  { transform: translate(-10px, -15px) rotate(-9deg) scale(0.98); }
+            100% { transform: translate(0, 0) rotate(-12deg) scale(1); }
+        }
+
+        /* =========================================
+           CANVAS LAYERS
+           ========================================= */
         #physics-canvas {
-            position: fixed; /* Locks the canvas to the screen so it doesn't scroll */
+            position: fixed; 
             top: 0;
             left: 0;
-            width: 100vw; /* Full viewport width */
-            height: 100vh; /* Full viewport height */
-            z-index: 0; /* Keeps the canvas behind the UI and header */
-            pointer-events: none; /* Allows mouse clicks to pass through the canvas to the buttons below */
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 0; 
+            pointer-events: none; 
         }
 
-        /* Layout Container: Wraps the main page content */
+        #slice-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9998; 
+            pointer-events: none;
+        }
+
         .workspace-container {
-            position: relative; /* Context for absolute positioning if needed */
-            z-index: 10; /* Places the content above the canvas */
-            padding: 140px 50px 50px 50px; /* 140px top padding pushes content down below the fixed header */
-            max-width: 1200px; /* Restricts maximum width on large screens */
-            margin: 0 auto; /* Centers the container horizontally */
-            text-align: center; /* Centers the text inside */
+            position: relative; 
+            z-index: 10; /* Text will stay on top of the cassette */
+            padding: 140px 50px 50px 50px; 
+            max-width: 1200px; 
+            margin: 0 auto; 
+            text-align: center; 
         }
 
-        /* Main Page Title */
+        /* =========================================
+           PLAY BUTTON ANIMATION STYLES
+           ========================================= */
+        .intro-section {
+            min-height: 150px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 50px;
+        }
+
+        .btn-play-wrapper {
+            position: relative;
+            width: 240px;
+            height: 64px;
+            z-index: 20;
+        }
+
+        .btn-play-half {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--rose-pink);
+            border: 2px solid var(--rose-pink);
+            border-radius: 50px;
+            background: var(--bg-dark); 
+            box-shadow: 0 0 25px rgba(255, 80, 128, 0.2), inset 0 0 15px rgba(255, 80, 128, 0.15);
+            transition: all 0.7s cubic-bezier(0.25, 1, 0.5, 1);
+            pointer-events: none; 
+        }
+
+        .top-half { clip-path: inset(0 0 50% 0); }
+        .bottom-half { clip-path: inset(50% 0 0 0); }
+        .play-icon { font-size: 1.2rem; }
+
+        .btn-play-wrapper.sliced .top-half {
+            transform: translateY(-60px) translateX(-30px) rotate(-15deg);
+            opacity: 0;
+            filter: blur(5px);
+        }
+        .btn-play-wrapper.sliced .bottom-half {
+            transform: translateY(60px) translateX(30px) rotate(15deg);
+            opacity: 0;
+            filter: blur(5px);
+        }
+
+        /* Tagline Styles */
+        .tagline-hidden { display: none; }
+        .tagline-visible {
+            display: block;
+            animation: cinematicEntrance 1.2s cubic-bezier(0.2, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes cinematicEntrance {
+            0% { opacity: 0; transform: translateY(40px) scale(0.95); filter: blur(10px); }
+            100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+        }
+
         .workspace-title {
-            font-size: 3rem; /* Very large text */
-            margin-bottom: 10px; /* Space below the title */
-            background: linear-gradient(45deg, var(--rose-pink), #ffffff); /* Rose Pink to white gradient */
-            -webkit-background-clip: text; /* Clips the background gradient to the shape of the text */
-            -webkit-text-fill-color: transparent; /* Makes the actual text transparent so the gradient shows through */
-            text-shadow: 0 0 30px var(--rose-pink-glow); /* Adds a rose pink glow behind the text */
+            font-size: 3rem; 
+            margin-bottom: 10px; 
+            background: linear-gradient(45deg, var(--rose-pink), #ffffff, var(--rose-pink)); 
+            background-size: 200% auto;
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            text-shadow: 0 0 30px var(--rose-pink-glow); 
+            animation: gradientShift 6s linear infinite;
         }
 
-        /* Subtitle below the main title */
-        .workspace-subtitle {
-            color: #a3a3a3; /* Light grey text */
-            margin-bottom: 60px; /* Space below the subtitle */
-            font-size: 1.1rem; /* Slightly larger text */
+        @keyframes gradientShift {
+            0% { background-position: 0% center; }
+            50% { background-position: 100% center; }
+            100% { background-position: 0% center; }
         }
 
-        /* CSS Grid for arranging the feature boxes side by side */
+        .workspace-subtitle { color: #a3a3a3; font-size: 1.1rem; }
+
         .features-grid {
-            display: grid; /* Enables CSS Grid layout */
-            /* Automatically creates columns that are at least 300px wide, and stretches them evenly to fill space */
+            display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 40px; /* 40px space between each box */
-            margin-top: 50px; /* Space above the grid */
+            gap: 40px; 
         }
 
-        /* Individual Feature Box Design */
         .feature-box {
-            background: rgba(28, 57, 187, 0.05); /* Very faint blue background fill */
-            border: 1px solid rgba(255, 80, 128, 0.2); /* Faint rose pink border */
-            border-radius: 20px; /* Rounded corners */
-            padding: 40px 30px; /* Inner spacing */
-            backdrop-filter: blur(10px); /* Blurs the canvas background directly behind this box */
-            -webkit-backdrop-filter: blur(10px); /* Safari support for blur */
-            transition: all 0.4s ease; /* Smooth hover transition */
-            position: relative; /* Needed for JavaScript to calculate its exact position on screen */
-            /* Inset shadow gives depth, outer shadow lifts it off the background */
+            background: rgba(28, 57, 187, 0.05); 
+            border: 1px solid rgba(255, 80, 128, 0.2); 
+            border-radius: 20px; 
+            padding: 40px 30px; 
+            backdrop-filter: blur(10px); 
+            -webkit-backdrop-filter: blur(10px); 
+            transition: all 0.4s ease; 
+            position: relative; 
             box-shadow: inset 0 0 20px rgba(28, 57, 187, 0.1), 0 15px 30px rgba(0,0,0,0.5);
         }
-
-        /* Hover effect for the Feature Box */
         .feature-box:hover {
-            transform: translateY(-10px); /* Physically lifts the box up by 10 pixels */
-            border-color: var(--rose-pink); /* Changes border to solid rose pink */
-            /* Intensifies shadows to simulate glowing and lifting closer to the user */
-            box-shadow: inset 0 0 20px var(--rose-pink-glow),
-                        0 20px 40px rgba(0,0,0,0.8),
-                        0 0 30px var(--persian-blue-glow);
+            transform: translateY(-10px); 
+            border-color: var(--rose-pink); 
+            box-shadow: inset 0 0 20px var(--rose-pink-glow), 0 20px 40px rgba(0,0,0,0.8), 0 0 30px var(--persian-blue-glow);
         }
 
-        /* Emoji/Icon at the top of the feature box */
-        .feature-icon {
-            font-size: 2.5rem; /* Large icon size */
-            margin-bottom: 20px; /* Space below the icon */
-            display: inline-block; /* Allows margin to work on an inline element */
-        }
+        .feature-icon { font-size: 2.5rem; margin-bottom: 20px; display: inline-block; }
+        .feature-title { font-size: 1.5rem; color: var(--rose-pink); margin-bottom: 15px; }
+        .feature-desc { color: #b3b9d6; line-height: 1.6; font-size: 0.95rem; }
 
-        /* Title inside the feature box */
-        .feature-title {
-            font-size: 1.5rem;
-            color: var(--rose-pink); /* Rose Pink text */
-            margin-bottom: 15px; /* Space below the title */
-        }
-
-        /* Paragraph text inside the feature box */
-        .feature-desc {
-            color: #b3b9d6; /* Light steel blue text */
-            line-height: 1.6; /* Increases space between lines of text for readability */
-            font-size: 0.95rem; /* Slightly smaller text */
-        }
-
-        /* Buttons inside the feature boxes */
         .btn-action {
-            margin-top: 25px; /* Space above the button */
-            padding: 10px 25px; /* Inner spacing */
-            background: transparent; /* No fill */
-            border: 1px solid var(--persian-blue); /* Blue border */
-            color: #fff; /* White text */
-            border-radius: 30px; /* Rounded corners */
-            cursor: pointer; /* Changes mouse to a pointing hand on hover */
-            transition: all 0.3s ease; /* Smooth hover animation */
-            text-transform: uppercase; /* Forces text to all caps */
-            font-size: 0.8rem; /* Small text */
-            letter-spacing: 1px; /* Spreads letters apart */
+            margin-top: 25px; 
+            padding: 10px 25px; 
+            background: transparent; 
+            border: 1px solid var(--persian-blue); 
+            color: #fff; 
+            border-radius: 30px; 
+            transition: all 0.3s ease; 
+            text-transform: uppercase; 
+            font-size: 0.8rem; 
+            letter-spacing: 1px; 
         }
-
-        /* Hover effect for the action buttons */
         .btn-action:hover {
-            background: var(--persian-blue); /* Fills button with blue */
-            box-shadow: 0 0 20px var(--persian-blue-glow); /* Adds blue glow */
+            background: var(--persian-blue); 
+            box-shadow: 0 0 20px var(--persian-blue-glow); 
         }
     </style>
 </head>
 <body>
 
-    <!-- Glass Header Section -->
+    <div id="custom-cursor" class="cursor-wrapper">
+        <div class="cursor-visual"></div>
+    </div>
+
+    <audio id="bg-music" loop>
+        <source src="suzume.mp3" type="audio/mpeg">
+    </audio>
+
     <header class="glass-header">
-        <!-- Logo linking to home -->
         <a href="#" class="brand-logo">Audio<span>X</span>edit</a>
-        <!-- Navigation area -->
         <nav class="header-nav">
-            <!-- Connect link pointing to GitHub, opens in new tab (target="_blank") -->
             <a href="https://github.com/nakulcodebase" target="_blank" class="btn-connect-header">Connect Us</a>
         </nav>
     </header>
 
-    <!-- The Canvas element where all Javascript physics are drawn -->
+    <div class="bg-cassette-wrapper">
+        <img src="image.png" >
+    </div>
+
     <canvas id="physics-canvas"></canvas>
+    
+    <canvas id="slice-canvas"></canvas>
 
-    <!-- The Main Page Content Container -->
     <main class="workspace-container">
-        <h1 class="workspace-title">Audio Engineering Hub</h1>
-        <p class="workspace-subtitle">Move your cursor to warp space. The elements are completely solid.</p>
+        
+        <div class="intro-section">
+            <div id="btn-play-wrapper" class="btn-play-wrapper">
+                <div class="btn-play-half top-half"><span class="play-icon">▶</span> Play Track</div>
+                <div class="btn-play-half bottom-half"><span class="play-icon">▶</span> Play Track</div>
+            </div>
+            
+            <div id="tagline-wrapper" class="tagline-hidden">
+                <h1 class="workspace-title">AudioXedit: Master your tracks with zero data footprint.</h1>
+                <p class="workspace-subtitle"> A premium platform that respects your privacy </p>
+            </div>
+        </div>
 
-        <!-- Container for the 3 HTML Feature Boxes -->
         <div class="features-grid">
-            <!-- Box 1 -->
             <div class="feature-box" id="box-trimming">
                 <span class="feature-icon">✂️</span>
                 <h2 class="feature-title">Sound Trimming</h2>
                 <p class="feature-desc">Precision waveform cutting and slicing. Isolate frequencies and remove unwanted silence with zero-crossing accuracy.</p>
                 <button class="btn-action">Open Editor</button>
             </div>
-
-            <!-- Box 2 -->
             <div class="feature-box" id="box-mixing">
                 <span class="feature-icon">🎛️</span>
                 <h2 class="feature-title">Spatial Mixing</h2>
                 <p class="feature-desc">Route multiple audio channels through immersive 3D space environments to create deep, wide soundscapes.</p>
                 <button class="btn-action">Mix Console</button>
             </div>
-
-            <!-- Box 3 -->
             <div class="feature-box" id="box-mastering">
                 <span class="feature-icon">🎚️</span>
                 <h2 class="feature-title">Dynamic Mastering</h2>
@@ -260,282 +364,251 @@
         </div>
     </main>
 
-    <!-- Javascript Physics Engine -->
     <script>
-        // Grab the canvas HTML element
-        const canvas = document.getElementById('physics-canvas');
-        // Get the 2D drawing context from the canvas to render shapes and text
-        const ctx = canvas.getContext('2d');
+        // =========================================
+        // CUSTOM CURSOR LOGIC
+        // =========================================
+        const customCursor = document.getElementById('custom-cursor');
         
-        // Variables to store the screen width and height
-        let width, height;
-        // Object to store the current X and Y position of the user's mouse cursor. 
-        // Initialized far off-screen (-1000) so physics don't trigger until the user moves their mouse.
-        let mouse = { x: -1000, y: -1000 };
-        
-        // Arrays to hold the physics objects
-        let spaceGrid = []; // Holds the background dots
-        let musicNodes = []; // Holds the bouncing music notes
-        let featureBoxRects = []; // Holds the exact HTML coordinates of the feature boxes for collision
+        const interactiveElements = document.querySelectorAll('a, .feature-box');
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', () => customCursor.classList.add('glass-mode'));
+            el.addEventListener('mouseleave', () => customCursor.classList.remove('glass-mode'));
+        });
 
-        // Base color strings used in the JS for the notes
-        const persianBlue = '28, 57, 187';
-        // UPDATED JAVASCRIPT RGB STRING TO MATCH THE NEW ROSE PINK (#FF5080)
-        const rosePink = '255, 80, 128';
+        // =========================================
+        // SLICING LOGIC & BUTTON BREAKING
+        // =========================================
+        const btnPlayWrapper = document.getElementById('btn-play-wrapper');
+        const taglineWrapper = document.getElementById('tagline-wrapper');
+        const bgMusic = document.getElementById('bg-music');
         
-        // Array containing the text characters to be used as falling music notes
-        const noteSymbols = ['♪', '♫', '♩', '♬', '♭', '♯'];
+        let slicePoints = []; 
+        let isSliced = false;
 
-        // Initialization function to set up the canvas and physics objects
-        function init() {
-            // Set canvas resolution to match the user's window size exactly
-            width = canvas.width = window.innerWidth;
-            height = canvas.height = window.innerHeight;
+        function triggerButtonBreak() {
+            if(isSliced) return;
+            isSliced = true;
+            btnPlayWrapper.classList.add('sliced');
             
-            // Clear out the grid array if resizing the window
-            spaceGrid = [];
-            // Distance in pixels between each dot in the background grid
-            const spacing = 35;
+            bgMusic.volume = 0.4; 
+            bgMusic.play().catch(e => console.log("Audio skipped.", e));
             
-            // Loop through the screen width
-            for (let x = 0; x < width; x += spacing) {
-                // Loop through the screen height
-                for (let y = 0; y < height; y += spacing) {
-                    // Create a dot object and add it to the array
-                    spaceGrid.push({
-                        baseX: x, baseY: y, // The permanent resting coordinate of the dot
-                        x: x, y: y // The current actual coordinate of the dot (which can warp)
-                    });
+            setTimeout(() => {
+                btnPlayWrapper.style.display = 'none'; 
+                taglineWrapper.classList.remove('tagline-hidden'); 
+                taglineWrapper.classList.add('tagline-visible'); 
+            }, 600); 
+        }
+
+        function handlePointerMove(clientX, clientY) {
+            customCursor.style.transform = `translate3d(${clientX}px, ${clientY}px, 0)`;
+
+            mouseCanvas.x = clientX; 
+            mouseCanvas.y = clientY; 
+            
+            slicePoints.push({x: clientX, y: clientY, life: 1.0});
+
+            if (btnPlayWrapper && !btnPlayWrapper.classList.contains('sliced')) {
+                const rect = btnPlayWrapper.getBoundingClientRect();
+                if (clientX >= rect.left && clientX <= rect.right && 
+                    clientY >= rect.top && clientY <= rect.bottom) {
+                    triggerButtonBreak(); 
                 }
             }
+        }
 
-            // Calculate where the HTML boxes are right now
+        window.addEventListener('mousemove', (e) => {
+            handlePointerMove(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handlePointerMove(touch.clientX, touch.clientY);
+        }, { passive: false });
+
+
+        // =========================================
+        // PHYSICS CANVAS LOGIC
+        // =========================================
+        const bgCanvas = document.getElementById('physics-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        
+        const sliceCanvas = document.getElementById('slice-canvas');
+        const sliceCtx = sliceCanvas.getContext('2d');
+        
+        let width, height;
+        let mouseCanvas = { x: -1000, y: -1000 };
+        
+        let spaceGrid = []; 
+        let musicNodes = []; 
+        let featureBoxRects = []; 
+
+        const persianBlue = '28, 57, 187';
+        const rosePink = '255, 80, 128';
+        const noteSymbols = ['♪', '♫', '♩', '♬', '♭', '♯'];
+
+        function init() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            
+            bgCanvas.width = width;
+            bgCanvas.height = height;
+            sliceCanvas.width = width;
+            sliceCanvas.height = height;
+            
+            spaceGrid = [];
+            const spacing = 35;
+            
+            for (let x = 0; x < width; x += spacing) {
+                for (let y = 0; y < height; y += spacing) {
+                    spaceGrid.push({ baseX: x, baseY: y, x: x, y: y });
+                }
+            }
             updateBoxPositions();
         }
 
-        // Function to measure the HTML feature boxes so the Canvas knows where they are
         function updateBoxPositions() {
-            // Find all HTML elements with the class 'feature-box'
             const boxes = document.querySelectorAll('.feature-box');
-            // Convert that list to an array, and measure each box's Top, Bottom, Left, Right coordinates.
-            // Save these mathematical rectangles into our featureBoxRects array.
             featureBoxRects = Array.from(boxes).map(box => box.getBoundingClientRect());
         }
 
-        // Function to create a new falling music note
         function spawnMusicNode() {
-            // Limit the maximum number of notes on screen to 35 to prevent lag
             if (musicNodes.length < 35) { 
                 musicNodes.push({
-                    x: Math.random() * width, // Random starting X position across the screen width
-                    y: -50, // Start slightly above the top edge of the screen so it falls in naturally
-                    vx: (Math.random() - 0.5) * 2, // Velocity X: Slight random left/right horizontal movement
-                    vy: Math.random() * 2 + 1, // Velocity Y: Initial falling speed downwards
-                    symbol: noteSymbols[Math.floor(Math.random() * noteSymbols.length)], // Pick a random musical symbol
-                    size: Math.random() * 20 + 15, // Assign a random font size between 15px and 35px
-                    color: Math.random() > 0.5 ? rosePink : persianBlue, // 50/50 chance to be Rose Pink or Persian Blue
-                    rotation: Math.random() * Math.PI * 2, // Start at a random rotation angle
-                    rotSpeed: (Math.random() - 0.5) * 0.1, // Assign a random spinning speed
-                    bounces: 0 // Keep track of how many times it hits a box
+                    x: Math.random() * width, y: -50, 
+                    vx: (Math.random() - 0.5) * 2, vy: Math.random() * 2 + 1, 
+                    symbol: noteSymbols[Math.floor(Math.random() * noteSymbols.length)], 
+                    size: Math.random() * 20 + 15, 
+                    color: Math.random() > 0.5 ? rosePink : persianBlue, 
+                    rotation: Math.random() * Math.PI * 2, rotSpeed: (Math.random() - 0.5) * 0.1, 
+                    bounces: 0 
                 });
             }
         }
 
-        // The Main Animation Loop - This function runs 60 times per second
         function animate() {
-            // Wipe the entire canvas clean for the next frame
-            ctx.clearRect(0, 0, width, height);
-
-            // Set the radius around the cursor that affects the space grid (250px)
+            bgCtx.clearRect(0, 0, width, height);
+            sliceCtx.clearRect(0, 0, width, height);
+            
             const gravityRadius = 250;
 
-            // Loop through every single background dot in the grid array
             spaceGrid.forEach(point => {
-                // Calculate horizontal distance (dx) between mouse and the dot's base position
-                let dx = mouse.x - point.baseX;
-                // Calculate vertical distance (dy)
-                let dy = mouse.y - point.baseY;
-                // Use Pythagorean theorem to find the true diagonal distance between mouse and dot
+                let dx = mouseCanvas.x - point.baseX;
+                let dy = mouseCanvas.y - point.baseY;
                 let distance = Math.sqrt(dx * dx + dy * dy);
 
-                // These are the baseline, resting states for all dots far away from the cursor.
                 let currentRadius = 1.2; 
-                let r = 100, g = 150, b = 255; 
-                let currentOpacity = 0.25; 
+                let r = 100, g = 150, b = 255;
+                let currentOpacity = 0; 
 
-                // Check if the dot is close enough to the cursor to be affected
                 if (distance < gravityRadius) {
-                    // Calculate force: 1.0 at center, drops to 0.0 at the 250px edge
                     let force = (gravityRadius - distance) / gravityRadius;
-                    
-                    // Warp the dot's X/Y coordinate, pulling it towards the cursor
                     point.x = point.baseX + (dx * force * 0.4);
                     point.y = point.baseY + (dy * force * 0.4);
-
-                    // Increase the physical size of the dot based on proximity
                     currentRadius = 1.2 + (force * 2.3);
-
-                    // =========================================================================
-                    // BRIGHTNESS REDUCTION LOGIC
-                    // =========================================================================
-                    // Interpolate the color. Instead of pushing all the way to pure white (255,255,255), 
-                    // we tone it down to a softer light blue/white.
-                    r = 100 + (force * 100); // Maxes out at 200 instead of 255
-                    g = 150 + (force * 70);  // Maxes out at 220 instead of 255
-                    b = 255; 
-                    
-                    // Reduce max opacity from 1.0 down to 0.6 to make it less blinding
-                    currentOpacity = 0.25 + (force * 0.35); 
-
-                    // Reduce the glow effect (shadowBlur down from 20 to 10) and lower shadow opacity
-                    ctx.shadowBlur = force * 10;
-                    ctx.shadowColor = `rgba(200, 220, 255, ${force * 0.5})`;
-                    // =========================================================================
-
+                    r = 100 + (force * 100); g = 150 + (force * 70); b = 255; 
+                    currentOpacity = (force * 0.6); 
+                    bgCtx.shadowBlur = force * 10;
+                    bgCtx.shadowColor = `rgba(200, 220, 255, ${force * 0.5})`;
                 } else {
-                    // If the dot is far away from the cursor, smoothly drift it back to its resting base coordinate
                     point.x += (point.baseX - point.x) * 0.1;
                     point.y += (point.baseY - point.y) * 0.1;
-                    
-                    // Ensure resting dots have absolutely no glow so they remain subtle
-                    ctx.shadowBlur = 0;
+                    bgCtx.shadowBlur = 0;
                 }
 
-                // Prepare the canvas context to draw this specific dot
-                ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${currentOpacity})`; // Set the calculated color and opacity
-                ctx.beginPath(); // Start drawing path
-                ctx.arc(point.x, point.y, currentRadius, 0, Math.PI * 2); // Draw a circle (arc)
-                ctx.fill(); // Fill the circle with the color
-                
-                // Immediately turn off the glow so it doesn't accidentally apply to the next dot
-                ctx.shadowBlur = 0;
+                if (currentOpacity > 0) {
+                    bgCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${currentOpacity})`; 
+                    bgCtx.beginPath(); 
+                    bgCtx.arc(point.x, point.y, currentRadius, 0, Math.PI * 2); 
+                    bgCtx.fill(); 
+                    bgCtx.shadowBlur = 0;
+                }
             });
 
-            // Randomly decide to spawn a new music note (4% chance per frame)
             if (Math.random() < 0.04) spawnMusicNode(); 
-
-            // Loop backwards through the music notes array. 
-            // We go backwards so that if we delete a node, it doesn't mess up the loop index.
             for (let i = musicNodes.length - 1; i >= 0; i--) {
-                let node = musicNodes[i]; // Get current note
-                
-                // Apply gravity by continuously increasing the downward velocity
+                let node = musicNodes[i]; 
                 node.vy += 0.15; 
 
-                // CURSOR INTERACTION FOR MUSIC NODES (REPEL EFFECT)
-                let dxMouse = mouse.x - node.x;
-                let dyMouse = mouse.y - node.y;
+                let dxMouse = mouseCanvas.x - node.x;
+                let dyMouse = mouseCanvas.y - node.y;
                 let distMouse = Math.sqrt(dxMouse * dxMouse + dyMouse * dyMouse);
-                let interactRadius = 150; // The physical radius the cursor affects the notes
+                let interactRadius = 150; 
 
-                // If the cursor gets close to the note
                 if (distMouse < interactRadius && distMouse > 0) {
-                    // Calculate how strong the push should be
                     let force = (interactRadius - distMouse) / interactRadius;
-                    
-                    // Push the note away from the cursor by modifying its velocities
                     node.vx -= (dxMouse / distMouse) * force * 1.5; 
                     node.vy -= (dyMouse / distMouse) * force * 1.5;
-                    
-                    // Add a wild spinning effect to simulate turbulence
                     node.rotSpeed += (Math.random() - 0.5) * force * 0.5;
                 }
 
-                // Apply velocities to the actual X and Y coordinates to move the note
-                node.x += node.vx;
-                node.y += node.vy;
-                // Add the rotation speed to the current angle to spin it
-                node.rotation += node.rotSpeed; 
-
-                // Approximate collision area (half the font size)
+                node.x += node.vx; node.y += node.vy; node.rotation += node.rotSpeed; 
                 let collisionRadius = node.size / 2; 
 
-                // Loop through every HTML Feature Box we measured earlier
                 for (let rect of featureBoxRects) {
-                    // Complex condition: Check if the Note's X and Y are fully inside the bounds of the HTML Box
-                    if (node.x + collisionRadius > rect.left && 
-                        node.x - collisionRadius < rect.right && 
-                        node.y + collisionRadius > rect.top && 
-                        node.y - collisionRadius < rect.bottom) {
+                    if (node.x + collisionRadius > rect.left && node.x - collisionRadius < rect.right && 
+                        node.y + collisionRadius > rect.top && node.y - collisionRadius < rect.bottom) {
                         
-                        // If a collision happened, calculate the exact distance from the note to every edge of the box
-                        let distTop = Math.abs((node.y) - rect.top);
-                        let distLeft = Math.abs((node.x) - rect.left);
-                        let distRight = Math.abs((node.x) - rect.right);
+                        let distTop = Math.abs(node.y - rect.top);
+                        let distLeft = Math.abs(node.x - rect.left);
+                        let distRight = Math.abs(node.x - rect.right);
 
-                        // If it hit the Top edge, and was falling downwards
                         if (distTop < distLeft && distTop < distRight && node.vy > 0) {
-                            node.y = rect.top - collisionRadius; // Push it precisely to the roof top so it doesn't sink in
-                            node.vy *= -0.6; // Reverse vertical velocity (bounce) and dampen it (lose energy)
-                            node.vx *= 0.8;  // Apply horizontal friction on hit
-                            node.rotSpeed = (Math.random() - 0.5) * 0.3; // Give it a random new spin speed upon impact
-                            node.bounces++; // Increment bounce counter
+                            node.y = rect.top - collisionRadius; 
+                            node.vy *= -0.6; node.vx *= 0.8; node.rotSpeed = (Math.random() - 0.5) * 0.3; node.bounces++; 
                         } 
-                        // If it hit the Left edge
-                        else if (distLeft < distTop && distLeft < distRight) {
-                            node.x = rect.left - collisionRadius; // Push it to the left edge
-                            node.vx *= -0.8; // Reverse horizontal velocity, deflecting it away
-                        }
-                        // If it hit the Right edge
-                        else if (distRight < distTop && distRight < distLeft) {
-                            node.x = rect.right + collisionRadius; // Push it to the right edge
-                            node.vx *= -0.8; // Reverse horizontal velocity, deflecting it away
-                        }
+                        else if (distLeft < distTop && distLeft < distRight) { node.x = rect.left - collisionRadius; node.vx *= -0.8; }
+                        else if (distRight < distTop && distRight < distLeft) { node.x = rect.right + collisionRadius; node.vx *= -0.8; }
                     }
                 }
 
-                // Cleanup rule: If note falls way off the bottom, off the sides, or has bounced more than 5 times
                 if (node.y > height + 50 || node.x < -50 || node.x > width + 50 || node.bounces > 5) {
-                    musicNodes.splice(i, 1); // Delete the note from memory
-                    continue; // Skip the drawing phase for this deleted note
+                    musicNodes.splice(i, 1); continue; 
                 }
 
-                // Draw the Music Note Text
-                ctx.save(); // Save current canvas state before transforming
-                ctx.translate(node.x, node.y); // Move the canvas drawing point exactly to the note's coordinate
-                ctx.rotate(node.rotation); // Rotate the canvas point
-                
-                // Define the text font and size
-                ctx.font = `bold ${node.size}px Arial`;
-                // Define text color and 90% opacity
-                ctx.fillStyle = `rgba(${node.color}, 0.9)`;
-                // Center text perfectly on our coordinate
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                
-                // Add glowing shadow to the notes
-                ctx.shadowBlur = 15;
-                ctx.shadowColor = `rgba(${node.color}, 0.8)`;
-                
-                // Physically stamp the text character onto the canvas at 0,0 (which we translated earlier)
-                ctx.fillText(node.symbol, 0, 0);
-                // Restore the canvas state so the rotation doesn't ruin the next object drawn
-                ctx.restore();
+                bgCtx.save(); 
+                bgCtx.translate(node.x, node.y); bgCtx.rotate(node.rotation); 
+                bgCtx.font = `bold ${node.size}px Arial`; bgCtx.fillStyle = `rgba(${node.color}, 0.9)`;
+                bgCtx.textAlign = "center"; bgCtx.textBaseline = "middle";
+                bgCtx.shadowBlur = 15; bgCtx.shadowColor = `rgba(${node.color}, 0.8)`;
+                bgCtx.fillText(node.symbol, 0, 0);
+                bgCtx.restore();
             }
 
-            // Loop this entire animate function recursively for the next frame
+            if (slicePoints.length > 1) {
+                sliceCtx.beginPath();
+                sliceCtx.moveTo(slicePoints[0].x, slicePoints[0].y);
+                
+                for (let i = 1; i < slicePoints.length; i++) {
+                    sliceCtx.lineTo(slicePoints[i].x, slicePoints[i].y);
+                }
+                
+                sliceCtx.strokeStyle = `rgba(230, 240, 255, 0.9)`;
+                sliceCtx.lineWidth = 3;
+                sliceCtx.shadowBlur = 15;
+                sliceCtx.shadowColor = 'rgba(255, 255, 255, 1)';
+                sliceCtx.lineCap = 'round';
+                sliceCtx.lineJoin = 'round';
+                
+                sliceCtx.stroke();
+                sliceCtx.shadowBlur = 0;
+            }
+
+            for(let i = 0; i < slicePoints.length; i++) {
+                slicePoints[i].life -= 0.08;
+            }
+            slicePoints = slicePoints.filter(p => p.life > 0);
+
             requestAnimationFrame(animate);
         }
 
-        // Event Listener: Track mouse movement across the window
-        window.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX; // Update mouse X
-            mouse.y = e.clientY; // Update mouse Y
-        });
-
-        // Event Listener: If user resizes their browser window
-        window.addEventListener('resize', () => {
-            init(); // Re-run setup to fix the canvas size and re-measure boxes
-        });
-
-        // Event Listener: If user scrolls up or down the page
-        window.addEventListener('scroll', () => {
-            updateBoxPositions(); // Re-measure boxes because scrolling changes their physical coordinates on screen
-        });
-
-        // Start the application: Run setup once, then trigger the animation loop
+        window.addEventListener('resize', init);
+        window.addEventListener('scroll', updateBoxPositions);
         init();
         animate();
     </script>
 </body>
 </html>
+
+```
