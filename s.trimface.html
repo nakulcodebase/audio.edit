@@ -1,0 +1,1353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AudioXedit | Precision Sound Trimmer</title>
+    <style>
+        /* CSS Reset & Variable Sync */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; 
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
+            cursor: none !important; 
+        }
+
+        :root {
+            --persian-blue: #1C39BB; 
+            --persian-blue-glow: rgba(28, 57, 187, 0.5); 
+            --rose-pink: #FF5080; 
+            --rose-pink-glow: rgba(255, 80, 128, 0.5); 
+            --bg-dark: #070913; 
+            --cyber-cyan: #00f3ff;
+            --cyber-cyan-glow: rgba(0, 243, 255, 0.35);
+        }
+
+        body {
+            min-height: 100vh; 
+            background-color: var(--bg-dark); 
+            color: #ffffff; 
+            overflow-x: hidden; 
+            position: relative; 
+            user-select: none; 
+        }
+
+        /* Custom Cursor from Landing Page */
+        .cursor-wrapper {
+            position: fixed;
+            top: 0;
+            left: 0;
+            pointer-events: none; 
+            z-index: 10000; 
+        }
+
+        .cursor-visual {
+            width: 8px; 
+            height: 8px;
+            background-color: #ff0000; 
+            border-radius: 50%;
+            transform: translate(-50%, -50%); 
+            box-shadow: 0 0 10px #ff0000; 
+            transition: width 0.2s ease, height 0.2s ease, background-color 0.2s ease, border 0.2s ease, backdrop-filter 0.2s ease;
+        }
+
+        .cursor-wrapper.glass-mode .cursor-visual {
+            width: 36px; 
+            height: 36px;
+            background-color: rgba(255, 255, 255, 0.05); 
+            border: 1px solid rgba(255, 255, 255, 0.3); 
+            backdrop-filter: blur(6px); 
+            -webkit-backdrop-filter: blur(6px);
+            box-shadow: none;
+        }
+
+        /* Glass Header */
+        .glass-header {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100%; 
+            height: 80px; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding: 0 60px; 
+            background: rgba(7, 9, 19, 0.6); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px); 
+            border-bottom: 1px solid rgba(255, 80, 128, 0.15); 
+            z-index: 1000; 
+        }
+
+        .brand-logo {
+            font-size: 1.6rem; 
+            font-weight: 700; 
+            color: #ffffff; 
+            text-decoration: none; 
+            letter-spacing: 1px; 
+        }
+        .brand-logo span { color: var(--rose-pink); }
+
+        .btn-back {
+            padding: 10px 24px; 
+            background: transparent; 
+            border: 1px solid rgba(255, 255, 255, 0.2); 
+            color: #ffffff; 
+            text-decoration: none; 
+            border-radius: 30px; 
+            font-size: 0.9rem; 
+            font-weight: 600; 
+            transition: all 0.3s ease; 
+        }
+        .btn-back:hover {
+            border-color: var(--rose-pink);
+            background: rgba(255, 80, 128, 0.05);
+            box-shadow: 0 0 15px rgba(255, 80, 128, 0.2);
+        }
+
+        /* Physics Gravity Canvas Layer */
+        #physics-canvas {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 100vw; 
+            height: 100vh; 
+            z-index: 0; 
+            pointer-events: none; 
+        }
+
+        /* Workspace Main Container */
+        .workspace-container {
+            position: relative;
+            z-index: 10;
+            padding: 120px 40px 40px 40px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 25px;
+        }
+
+        .track-info {
+            text-align: left;
+        }
+
+        .track-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .track-meta {
+            font-size: 0.85rem;
+            color: #8b949e;
+            margin-top: 4px;
+            display: flex;
+            gap: 15px;
+            font-family: monospace;
+        }
+
+        .meta-tag {
+            background: rgba(28, 57, 187, 0.15);
+            border: 1px solid rgba(28, 57, 187, 0.3);
+            padding: 2px 8px;
+            border-radius: 4px;
+            color: var(--cyber-cyan);
+        }
+
+        /* Glassmorphic Main Waveform Panel */
+        .trimmer-panel {
+            background: rgba(7, 9, 19, 0.75);
+            border: 1px solid rgba(255, 80, 128, 0.18);
+            border-radius: 24px;
+            padding: 30px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: inset 0 0 30px rgba(28, 57, 187, 0.1), 0 25px 50px rgba(0, 0, 0, 0.6);
+            margin-bottom: 30px;
+        }
+
+        /* Waveform Interactive Board */
+        .waveform-outer-wrapper {
+            position: relative;
+            background: rgba(4, 5, 11, 0.9);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 10px 0;
+            overflow: hidden;
+            margin-bottom: 25px;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.8);
+        }
+
+        /* Background grid lines for sound analysis look */
+        .grid-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 20px;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .center-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: rgba(255, 80, 128, 0.15);
+            pointer-events: none;
+            z-index: 2;
+        }
+
+        .waveform-canvas-container {
+            position: relative;
+            width: 100%;
+            height: 220px;
+            z-index: 3;
+        }
+
+        #waveform-canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        /* Trimming Handles and Mask Overlays */
+        .trim-mask {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: rgba(7, 9, 19, 0.75);
+            backdrop-filter: grayscale(1) brightness(0.4);
+            -webkit-backdrop-filter: grayscale(1) brightness(0.4);
+            pointer-events: none;
+            z-index: 4;
+        }
+
+        .trim-mask.left {
+            left: 0;
+            width: 15%; /* Linked dynamically */
+            border-right: 1px dashed rgba(255, 80, 128, 0.5);
+        }
+
+        .trim-mask.right {
+            right: 0;
+            width: 25%; /* Linked dynamically */
+            border-left: 1px dashed rgba(28, 57, 187, 0.5);
+        }
+
+        /* Tactile Draggable Guides */
+        .trim-handle {
+            position: absolute;
+            top: 0;
+            width: 4px;
+            height: 100%;
+            z-index: 5;
+            transition: opacity 0.2s;
+        }
+
+        .trim-handle::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px;
+            height: 40px;
+            border-radius: 6px;
+            background: inherit;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid rgba(255, 255, 255, 0.25);
+        }
+
+        .trim-handle::after {
+            content: '||';
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 8px;
+            font-weight: bold;
+            color: rgba(255,255,255,0.7);
+            letter-spacing: -1px;
+            pointer-events: none;
+        }
+
+        .trim-handle.start-handle {
+            background-color: var(--rose-pink);
+            box-shadow: 0 0 10px var(--rose-pink-glow);
+            left: 15%;
+        }
+
+        .trim-handle.start-handle::before {
+            left: -7px;
+        }
+
+        .trim-handle.start-handle::after {
+            left: 2px;
+        }
+
+        .trim-handle.end-handle {
+            background-color: var(--persian-blue);
+            box-shadow: 0 0 10px var(--persian-blue-glow);
+            left: 75%;
+        }
+
+        .trim-handle.end-handle::before {
+            right: -7px;
+        }
+
+        .trim-handle.end-handle::after {
+            right: 2px;
+        }
+
+        /* Playhead Needle */
+        .playhead-needle {
+            position: absolute;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background-color: var(--cyber-cyan);
+            box-shadow: 0 0 8px var(--cyber-cyan);
+            z-index: 6;
+            left: 35%; /* Dynamic */
+            pointer-events: none;
+            display: none; /* Only when playing */
+        }
+
+        .playhead-needle::after {
+            content: '▼';
+            position: absolute;
+            top: -2px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: var(--cyber-cyan);
+            font-size: 10px;
+        }
+
+        /* Timeline Labels */
+        .timeline-ticks {
+            position: relative;
+            height: 20px;
+            width: 100%;
+            margin-top: 5px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            font-family: monospace;
+            font-size: 0.75rem;
+            color: #6e7681;
+            z-index: 2;
+        }
+
+        .tick-label {
+            position: absolute;
+            transform: translateX(-50%);
+            top: 4px;
+        }
+
+        /* Interactive Controls Dashboard */
+        .control-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1.2fr 1fr;
+            gap: 25px;
+            align-items: center;
+        }
+
+        @media (max-width: 900px) {
+            .control-dashboard {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+        }
+
+        /* Segment A: Main Action Buttons */
+        .control-group.center-actions {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-circle {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        .btn-circle:hover {
+            transform: scale(1.1);
+            background: rgba(255, 255, 255, 0.1);
+            border-color: #ffffff;
+        }
+
+        .btn-circle.btn-play {
+            width: 70px;
+            height: 70px;
+            background: var(--rose-pink);
+            border-color: var(--rose-pink);
+            box-shadow: 0 0 20px var(--rose-pink-glow);
+            color: #070913;
+        }
+
+        .btn-circle.btn-play:hover {
+            transform: scale(1.1);
+            background: #ffffff;
+            border-color: #ffffff;
+            box-shadow: 0 0 25px rgba(255, 255, 255, 0.5);
+        }
+
+        /* Segment B: Precision Timing Inputs */
+        .control-group.timing-displays {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 16px;
+            padding: 15px;
+        }
+
+        .time-box {
+            text-align: center;
+        }
+
+        .time-box-label {
+            font-size: 0.75rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .time-counter {
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1.35rem;
+            font-weight: bold;
+            color: var(--cyber-cyan);
+            text-shadow: 0 0 10px var(--cyber-cyan-glow);
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px 10px;
+            border-radius: 6px;
+            border: 1px solid rgba(0, 243, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .stepper-btn {
+            background: transparent;
+            border: none;
+            color: var(--cyber-cyan);
+            font-weight: bold;
+            font-size: 0.9rem;
+            padding: 0 4px;
+            transition: color 0.2s;
+        }
+        .stepper-btn:hover {
+            color: #ffffff;
+        }
+
+        /* Segment C: Features and Modifiers */
+        .control-group.effects-modifiers {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(28, 57, 187, 0.05);
+            border: 1px solid rgba(28, 57, 187, 0.15);
+            padding: 8px 16px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #b3b9d6;
+        }
+
+        /* Custom Modern Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 22px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.15);
+            transition: .3s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--rose-pink);
+        }
+
+        input:focus + .slider {
+            box-shadow: 0 0 1px var(--rose-pink);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(22px);
+        }
+
+        /* Mode Selector Tabs */
+        .editor-modes {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            padding-bottom: 10px;
+        }
+
+        .mode-tab {
+            background: transparent;
+            border: 1px solid transparent;
+            color: #8b949e;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        .mode-tab:hover {
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .mode-tab.active {
+            color: var(--rose-pink);
+            background: rgba(255, 80, 128, 0.08);
+            border-color: rgba(255, 80, 128, 0.3);
+            box-shadow: 0 0 15px rgba(255, 80, 128, 0.1);
+        }
+
+        /* Action Footer Panel */
+        .workspace-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.06);
+            padding-top: 25px;
+        }
+
+        .status-message {
+            font-size: 0.85rem;
+            color: #8b949e;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--cyber-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--cyber-cyan);
+            animation: statusPulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes statusPulse {
+            0%, 100% { opacity: 0.3; }
+            50% { opacity: 1; }
+        }
+
+        .btn-render {
+            background: linear-gradient(135deg, var(--rose-pink) 0%, var(--persian-blue) 100%);
+            border: none;
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 0.95rem;
+            padding: 12px 35px;
+            border-radius: 30px;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .btn-render:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(255, 80, 128, 0.3), 0 0 20px rgba(28, 57, 187, 0.3);
+        }
+
+        /* AI Splitting Overlay / Prompt Suggestion Card */
+        .ai-assistant-card {
+            background: linear-gradient(135deg, rgba(28, 57, 187, 0.1) 0%, rgba(255, 80, 128, 0.1) 100%);
+            border: 1px solid rgba(255, 80, 128, 0.25);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            text-align: left;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .ai-card-content h3 {
+            font-size: 1.1rem;
+            color: #ffffff;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .ai-card-content p {
+            font-size: 0.85rem;
+            color: #b3b9d6;
+        }
+
+        .btn-ai-action {
+            background: transparent;
+            border: 1px solid var(--cyber-cyan);
+            color: var(--cyber-cyan);
+            font-size: 0.85rem;
+            font-weight: bold;
+            padding: 8px 18px;
+            border-radius: 20px;
+            transition: all 0.3s;
+        }
+
+        .btn-ai-action:hover {
+            background: var(--cyber-cyan);
+            color: #070913;
+            box-shadow: 0 0 15px var(--cyber-cyan-glow);
+        }
+
+        /* Notification Modal styles (replaces window.alert) */
+        .notification-modal {
+            position: fixed;
+            top: 30px;
+            right: 30px;
+            background: rgba(7, 9, 19, 0.95);
+            border: 1px solid var(--cyber-cyan);
+            border-radius: 12px;
+            padding: 16px 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 15px var(--cyber-cyan-glow);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transform: translateX(120%);
+            transition: transform 0.4s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+
+        .notification-modal.active {
+            transform: translateX(0);
+        }
+
+        .notification-icon {
+            font-size: 1.2rem;
+            color: var(--cyber-cyan);
+        }
+
+        .notification-text {
+            font-size: 0.9rem;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor -->
+    <div id="custom-cursor" class="cursor-wrapper">
+        <div class="cursor-visual"></div>
+    </div>
+
+    <!-- Alert Replacement System Toast -->
+    <div id="notification" class="notification-modal">
+        <span class="notification-icon">⚡</span>
+        <span id="notification-text" class="notification-text">Action completed successfully.</span>
+    </div>
+
+    <!-- Glass Header -->
+    <header class="glass-header">
+        <a href="#" class="brand-logo">Audio<span>X</span>edit</a>
+        <nav class="header-nav">
+            <button class="btn-back" onclick="showToast('Navigating back to main workspace...')">← Workspace Menu</button>
+        </nav>
+    </header>
+
+    <!-- Interactive Gravitational Dot Field -->
+    <canvas id="physics-canvas"></canvas>
+
+    <!-- Main Workspace Container -->
+    <main class="workspace-container">
+        
+        <!-- Track Title & Metadata panel -->
+        <div class="panel-header">
+            <div class="track-info">
+                <h1 class="track-title">Cyber_Symphony_Mix_04.wav</h1>
+                <div class="track-meta">
+                    <span>SIZE: <b style="color:white">14.2 MB</b></span>
+                    <span>BITRATE: <b style="color:white">1411 kbps</b></span>
+                    <span>SAMPLING: <span class="meta-tag">48.0 kHz / 32-bit</span></span>
+                </div>
+            </div>
+
+            <!-- Editor Presets Tab -->
+            <div class="editor-modes">
+                <button class="mode-tab active" onclick="switchMode(this, 'waveform')">Waveform View</button>
+                <button class="mode-tab" onclick="switchMode(this, 'spectrogram')">Spectral Analysis</button>
+                <button class="mode-tab" onclick="switchMode(this, 'grid')">Rhythm Grid</button>
+            </div>
+        </div>
+
+        <!-- Trimmer Work Station -->
+        <div class="trimmer-panel">
+            
+            <!-- Waveform Slider Assembly -->
+            <div class="waveform-outer-wrapper" id="waveform-wrapper">
+                <div class="grid-overlay"></div>
+                <div class="center-line"></div>
+                
+                <div class="waveform-canvas-container">
+                    <!-- Shading Discard Masks -->
+                    <div class="trim-mask left" id="left-mask"></div>
+                    <div class="trim-mask right" id="right-mask"></div>
+
+                    <!-- Left Trimming Bound Needle -->
+                    <div class="trim-handle start-handle" id="start-handle"></div>
+
+                    <!-- Live Scanning Head -->
+                    <div class="playhead-needle" id="playhead-needle"></div>
+
+                    <!-- Right Trimming Bound Needle -->
+                    <div class="trim-handle end-handle" id="end-handle"></div>
+
+                    <!-- Graphic Renderer -->
+                    <canvas id="waveform-canvas"></canvas>
+                </div>
+            </div>
+
+            <!-- Timing Controls Matrix -->
+            <div class="control-dashboard">
+                
+                <!-- Left: Auxiliary Toggles -->
+                <div class="control-group effects-modifiers">
+                    <div class="toggle-row">
+                        <span>Zero-Crossing Snapping</span>
+                        <label class="switch">
+                            <input type="checkbox" checked onchange="showToast('Zero-crossing alignment activated.')">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="toggle-row">
+                        <span>Auto-Fade Cut Points (50ms)</span>
+                        <label class="switch">
+                            <input type="checkbox" id="fade-toggle" onchange="toggleFade(this)">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Center: Primary Audio Transport Controls -->
+                <div class="control-group center-actions">
+                    <button class="btn-circle" id="btn-skip-backward" onclick="rewindToTrimStart()" title="Skip to Start Trim">
+                        ⏮
+                    </button>
+                    <button class="btn-circle btn-play" id="btn-play" onclick="togglePlayback()" title="Play Selected Loop">
+                        ▶
+                    </button>
+                    <button class="btn-circle" id="btn-zoom" onclick="simulateZoom()" title="Zoom Selection Mode">
+                        🔍
+                    </button>
+                </div>
+
+                <!-- Right: High-Precision Timers -->
+                <div class="control-group timing-displays">
+                    <div class="time-box">
+                        <div class="time-box-label">In Marker</div>
+                        <div class="time-counter">
+                            <button class="stepper-btn" onclick="stepMarker('start', -0.1)">-</button>
+                            <span id="start-time-label">00:09.00</span>
+                            <button class="stepper-btn" onclick="stepMarker('start', 0.1)">+</button>
+                        </div>
+                    </div>
+                    <div class="time-box">
+                        <div class="time-box-label">Out Marker</div>
+                        <div class="time-counter">
+                            <button class="stepper-btn" onclick="stepMarker('end', -0.1)">-</button>
+                            <span id="end-time-label">00:45.00</span>
+                            <button class="stepper-btn" onclick="stepMarker('end', 0.1)">+</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- Render & Export Row -->
+        <div class="workspace-footer">
+            <div class="status-message">
+                <span class="status-dot"></span>
+                <span id="status-text">Synchronized with local storage sandbox. No data footprint.</span>
+            </div>
+            <div>
+                <button class="btn-render" onclick="renderAudio()">Extract & Export Selection</button>
+            </div>
+        </div>
+
+        <!-- AI Assistant Block -->
+        <div class="ai-assistant-card">
+            <div class="ai-card-content">
+                <h3>✨ AI Auto-Slicer</h3>
+                <p>We analyzed the beat transients of this synthwave track. Click to automatically snap markers to the cleanest 16-bar loop.</p>
+            </div>
+            <button class="btn-ai-action" onclick="aiSnapToBeat()">Snap to 16-Bar Loop</button>
+        </div>
+
+    </main>
+
+    <script>
+        // ========================================================
+        // 1. BRAND CURSOR MICRO-INTERACTIONS
+        // ========================================================
+        const customCursor = document.getElementById('custom-cursor');
+        
+        const interactiveElements = document.querySelectorAll('button, a, .trim-handle, .switch, .mode-tab');
+        interactiveElements.forEach(el => {
+            el.addEventListener('mouseenter', () => customCursor.classList.add('glass-mode'));
+            el.addEventListener('mouseleave', () => customCursor.classList.remove('glass-mode'));
+        });
+
+        // Global position tracker
+        let mouseCanvas = { x: -1000, y: -1000 };
+        function handlePointerMove(clientX, clientY) {
+            customCursor.style.transform = `translate3d(${clientX}px, ${clientY}px, 0)`;
+            mouseCanvas.x = clientX; 
+            mouseCanvas.y = clientY; 
+        }
+
+        window.addEventListener('mousemove', (e) => handlePointerMove(e.clientX, e.clientY));
+        window.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handlePointerMove(touch.clientX, touch.clientY);
+        }, { passive: true });
+
+
+        // ========================================================
+        // 2. GRAVITY DOT PHYSICS MATRIX BACKGROUND (from Landing)
+        // ========================================================
+        const bgCanvas = document.getElementById('physics-canvas');
+        const bgCtx = bgCanvas.getContext('2d');
+        let width, height;
+        let spaceGrid = []; 
+
+        function initBackground() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            bgCanvas.width = width;
+            bgCanvas.height = height;
+            
+            spaceGrid = [];
+            const spacing = 45; // slightly wider space for better performance in workspace
+            
+            for (let x = 0; x < width; x += spacing) {
+                for (let y = 0; y < height; y += spacing) {
+                    spaceGrid.push({ baseX: x, baseY: y, x: x, y: y });
+                }
+            }
+        }
+
+        function animateBackground() {
+            bgCtx.clearRect(0, 0, width, height);
+            const gravityRadius = 220;
+
+            spaceGrid.forEach(point => {
+                let dx = mouseCanvas.x - point.baseX;
+                let dy = mouseCanvas.y - point.baseY;
+                let distance = Math.sqrt(dx * dx + dy * dy);
+
+                let currentRadius = 1.0; 
+                let r = 28, g = 57, b = 187; // persian blue bases
+                let currentOpacity = 0.05; 
+
+                if (distance < gravityRadius) {
+                    let force = (gravityRadius - distance) / gravityRadius;
+                    point.x = point.baseX + (dx * force * 0.35);
+                    point.y = point.baseY + (dy * force * 0.35);
+                    currentRadius = 1.0 + (force * 2.0);
+                    r = 28 + (force * 227); // shifts to rose pink components
+                    g = 57 + (force * 23); 
+                    b = 187 - (force * 59); 
+                    currentOpacity = 0.05 + (force * 0.55); 
+                } else {
+                    point.x += (point.baseX - point.x) * 0.1;
+                    point.y += (point.baseY - point.y) * 0.1;
+                }
+
+                bgCtx.fillStyle = `rgba(${r}, ${g}, ${b}, ${currentOpacity})`; 
+                bgCtx.beginPath(); 
+                bgCtx.arc(point.x, point.y, currentRadius, 0, Math.PI * 2); 
+                bgCtx.fill(); 
+            });
+
+            requestAnimationFrame(animateBackground);
+        }
+
+        window.addEventListener('resize', initBackground);
+        initBackground();
+        animateBackground();
+
+
+        // ========================================================
+        // 3. SOUND WAVEFORM GENERATION ENGINE (Procedural Graphics)
+        // ========================================================
+        const waveCanvas = document.getElementById('waveform-canvas');
+        const waveCtx = waveCanvas.getContext('2d');
+        let audioDuration = 60; // total simulated duration in seconds
+        let waveformData = [];
+        let totalBars = 160;
+
+        // Generate procedural audio peaks (resembling complex ambient beats)
+        function generateProceduralPeaks() {
+            waveformData = [];
+            for (let i = 0; i < totalBars; i++) {
+                // Compound sinewaves + random noise for realistic drum transient shapes
+                let baseHeight = Math.sin(i * 0.05) * 0.3 + Math.sin(i * 0.25) * 0.4;
+                // Add high frequency beats
+                if (i % 8 === 0) baseHeight += 0.45; // kick beats
+                if ((i + 4) % 8 === 0) baseHeight += 0.35; // snare beats
+                
+                let noise = (Math.random() - 0.5) * 0.15;
+                let finalVal = Math.min(Math.max(Math.abs(baseHeight) + noise, 0.05), 1.0);
+                waveformData.push(finalVal);
+            }
+        }
+
+        function drawWaveform(renderMode = 'waveform') {
+            const w = waveCanvas.width = waveCanvas.parentElement.clientWidth;
+            const h = waveCanvas.height = waveCanvas.parentElement.clientHeight;
+            
+            waveCtx.clearRect(0, 0, w, h);
+            
+            const barWidth = w / totalBars;
+            const centerLine = h / 2;
+
+            for (let i = 0; i < totalBars; i++) {
+                const val = waveformData[i];
+                const barHeight = val * (h * 0.8) / 2;
+                const x = i * barWidth;
+
+                // Color gradient shift across timeline (Persian Blue to Rose Pink)
+                const gradient = waveCtx.createLinearGradient(0, centerLine - barHeight, 0, centerLine + barHeight);
+                
+                if (renderMode === 'waveform') {
+                    // Classic Soundwave Colors
+                    gradient.addColorStop(0, '#FF5080'); // Pink top
+                    gradient.addColorStop(0.5, '#1C39BB'); // Blue mid
+                    gradient.addColorStop(1, '#FF5080'); // Pink bottom
+                    
+                    waveCtx.fillStyle = gradient;
+                    // Rounded rectangles for beautiful visual weight
+                    drawRoundedRect(waveCtx, x + 1, centerLine - barHeight, barWidth - 2, barHeight * 2, 2);
+                    
+                } else if (renderMode === 'spectrogram') {
+                    // Dynamic Colorful Energy Grid
+                    const intensityGradient = waveCtx.createLinearGradient(0, h, 0, 0);
+                    intensityGradient.addColorStop(0, 'rgba(28, 57, 187, 0.2)');
+                    intensityGradient.addColorStop(0.5, 'rgba(255, 80, 128, 0.85)');
+                    intensityGradient.addColorStop(1, 'rgba(0, 243, 255, 0.95)');
+                    waveCtx.fillStyle = intensityGradient;
+                    
+                    const heightStep = h / 8;
+                    for (let j = 0; j < 8; j++) {
+                        const cellIntensity = Math.sin(i * 0.15 + j * 0.5) * 0.5 + 0.5;
+                        if (cellIntensity * val > 0.18) {
+                            drawRoundedRect(waveCtx, x + 1, h - (j + 1) * heightStep + 1, barWidth - 2, heightStep - 2, 1);
+                        }
+                    }
+                } else if (renderMode === 'grid') {
+                    // Minimalist Precision Beat lines
+                    waveCtx.strokeStyle = 'rgba(28, 57, 187, 0.4)';
+                    waveCtx.lineWidth = 1;
+                    waveCtx.beginPath();
+                    waveCtx.moveTo(x, 0);
+                    waveCtx.lineTo(x, h);
+                    waveCtx.stroke();
+                    
+                    waveCtx.fillStyle = i % 8 === 0 ? 'var(--rose-pink)' : 'var(--cyber-cyan)';
+                    const beatHeight = val * (h * 0.5) / 2;
+                    waveCtx.fillRect(x + barWidth/2 - 1, centerLine - beatHeight, 2, beatHeight*2);
+                }
+            }
+        }
+
+        function drawRoundedRect(ctx, x, y, width, height, radius) {
+            ctx.beginPath();
+            ctx.moveTo(x + radius, y);
+            ctx.lineTo(x + width - radius, y);
+            ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+            ctx.lineTo(x + width, y + height - radius);
+            ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+            ctx.lineTo(x + radius, y + height);
+            ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+            ctx.lineTo(x, y + radius);
+            ctx.quadraticCurveTo(x, y, x + radius, y);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        generateProceduralPeaks();
+        drawWaveform('waveform');
+
+        // Maintain responsiveness of procedural canvas
+        window.addEventListener('resize', () => {
+            drawWaveform(currentEditorMode);
+            updateTrimOverlays();
+        });
+
+
+        // ========================================================
+        // 4. TRIM CONTROLLER & TIMELINE DRAGGING
+        // ========================================================
+        let trimStartPct = 15; // starting left limit percentage
+        let trimEndPct = 75;   // starting right limit percentage
+        
+        const waveformWrapper = document.getElementById('waveform-wrapper');
+        const startHandle = document.getElementById('start-handle');
+        const endHandle = document.getElementById('end-handle');
+        const leftMask = document.getElementById('left-mask');
+        const rightMask = document.getElementById('right-mask');
+        const playhead = document.getElementById('playhead-needle');
+
+        const startTimeLabel = document.getElementById('start-time-label');
+        const endTimeLabel = document.getElementById('end-time-label');
+
+        let isDraggingStart = false;
+        let isDraggingEnd = false;
+
+        // Visual Synchronization
+        function updateTrimOverlays() {
+            startHandle.style.left = `${trimStartPct}%`;
+            endHandle.style.left = `${trimEndPct}%`;
+            leftMask.style.width = `${trimStartPct}%`;
+            rightMask.style.width = `${100 - trimEndPct}%`;
+
+            // Calculate & format times
+            const startTimeSec = (trimStartPct / 100) * audioDuration;
+            const endTimeSec = (trimEndPct / 100) * audioDuration;
+
+            startTimeLabel.textContent = formatTimestamp(startTimeSec);
+            endTimeLabel.textContent = formatTimestamp(endTimeSec);
+            
+            if (playheadPositionSec < startTimeSec) {
+                setPlayheadPosition(startTimeSec);
+            } else if (playheadPositionSec > endTimeSec) {
+                setPlayheadPosition(startTimeSec);
+            }
+        }
+
+        function formatTimestamp(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            const ms = Math.floor((seconds % 1) * 100);
+            return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(2, '0')}`;
+        }
+
+        // Pointer Drag Events
+        function getPointerPercent(e) {
+            const rect = waveformWrapper.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const relativeX = clientX - rect.left;
+            return Math.min(Math.max((relativeX / rect.width) * 100, 0), 100);
+        }
+
+        // Mouse Down Handlers
+        startHandle.addEventListener('mousedown', () => isDraggingStart = true);
+        startHandle.addEventListener('touchstart', () => isDraggingStart = true);
+
+        endHandle.addEventListener('mousedown', () => isDraggingEnd = true);
+        endHandle.addEventListener('touchstart', () => isDraggingEnd = true);
+
+        // Global Drag Movements
+        window.addEventListener('mousemove', handleDrag);
+        window.addEventListener('touchmove', handleDrag, { passive: false });
+
+        window.addEventListener('mouseup', endDrag);
+        window.addEventListener('touchend', endDrag);
+
+        function handleDrag(e) {
+            if (!isDraggingStart && !isDraggingEnd) return;
+            e.preventDefault();
+
+            const pct = getPointerPercent(e);
+
+            if (isDraggingStart) {
+                // Restrict left trimmer to stay behind right handle with a small guard gap
+                trimStartPct = Math.min(pct, trimEndPct - 5); 
+                updateTrimOverlays();
+            } else if (isDraggingEnd) {
+                // Restrict right trimmer to stay in front of left handle with small guard gap
+                trimEndPct = Math.max(pct, trimStartPct + 5);
+                updateTrimOverlays();
+            }
+        }
+
+        function endDrag() {
+            isDraggingStart = false;
+            isDraggingEnd = false;
+        }
+
+        // Fine tuning via steppers
+        function stepMarker(type, delta) {
+            if (type === 'start') {
+                const currentSec = (trimStartPct / 100) * audioDuration;
+                const newSec = Math.min(Math.max(currentSec + delta, 0), ((trimEndPct - 5) / 100) * audioDuration);
+                trimStartPct = (newSec / audioDuration) * 100;
+            } else if (type === 'end') {
+                const currentSec = (trimEndPct / 100) * audioDuration;
+                const newSec = Math.max(Math.min(currentSec + delta, audioDuration), ((trimStartPct + 5) / 100) * audioDuration);
+                trimEndPct = (newSec / audioDuration) * 100;
+            }
+            updateTrimOverlays();
+            showToast(`Adjusted ${type} boundary by ${delta}s`);
+        }
+
+        updateTrimOverlays();
+
+
+        // ========================================================
+        // 5. INTERACTIVE PROCEDURAL WEB AUDIO SYNTHESIZER
+        // ========================================================
+        let audioCtx = null;
+        let isPlaying = false;
+        let animationFrameId = null;
+        let playheadPositionSec = 9.0; 
+        let lastPlaybackTickTime = 0;
+
+        function initAudioContext() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function setPlayheadPosition(seconds) {
+            playheadPositionSec = seconds;
+            const pct = (seconds / audioDuration) * 100;
+            playhead.style.left = `${pct}%`;
+        }
+
+        function togglePlayback() {
+            initAudioContext();
+            const playBtn = document.getElementById('btn-play');
+
+            if (isPlaying) {
+                isPlaying = false;
+                playBtn.innerHTML = '▶';
+                playBtn.title = "Play Selected Loop";
+                playhead.style.display = 'none';
+                cancelAnimationFrame(animationFrameId);
+                showToast("Playback paused.");
+            } else {
+                isPlaying = true;
+                playBtn.innerHTML = '⏸';
+                playBtn.title = "Pause Playback";
+                playhead.style.display = 'block';
+                
+                const startTimeSec = (trimStartPct / 100) * audioDuration;
+                if (playheadPositionSec < startTimeSec || playheadPositionSec >= (trimEndPct / 100) * audioDuration) {
+                    setPlayheadPosition(startTimeSec);
+                }
+                
+                lastPlaybackTickTime = audioCtx.currentTime;
+                playbackLoop();
+                showToast("Synthesizing live audio stream loop...");
+            }
+        }
+
+        function playbackLoop() {
+            if (!isPlaying) return;
+
+            const now = audioCtx.currentTime;
+            const delta = now - lastPlaybackTickTime;
+            lastPlaybackTickTime = now;
+
+            // Speed multiplier matching timeline length
+            const newPos = playheadPositionSec + delta;
+            const startTimeSec = (trimStartPct / 100) * audioDuration;
+            const endTimeSec = (trimEndPct / 100) * audioDuration;
+
+            if (newPos >= endTimeSec) {
+                setPlayheadPosition(startTimeSec); // Loop back
+                triggerSynthPulse(220, 0.15, 'sawtooth'); // loop reset beat
+                triggerSynthPulse(110, 0.4, 'sine');
+            } else {
+                setPlayheadPosition(newPos);
+            }
+
+            // Procedural Audio: Play note triggers based on wave peaks as playhead passes bars
+            const currentBarIndex = Math.floor((playheadPositionSec / audioDuration) * totalBars);
+            if (currentBarIndex >= 0 && currentBarIndex < totalBars) {
+                const peak = waveformData[currentBarIndex];
+                // Trigger occasional futuristic bleeps based on transient threshold
+                if (Math.random() < 0.08 && peak > 0.45) {
+                    const frequencies = [261.63, 293.66, 329.63, 392.00, 440.00]; // Pentatonic Synthwave scale
+                    const randomFreq = frequencies[Math.floor(peak * 10) % frequencies.length];
+                    triggerSynthPulse(randomFreq, 0.12, 'triangle');
+                }
+            }
+
+            animationFrameId = requestAnimationFrame(playbackLoop);
+        }
+
+        // Web Audio Synthesizer Waveform Voice
+        function triggerSynthPulse(frequency, duration, oscType = 'triangle') {
+            try {
+                if (!audioCtx || audioCtx.state === 'suspended') return;
+
+                const osc = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+                const filter = audioCtx.createBiquadFilter();
+
+                osc.type = oscType;
+                osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+
+                // Quick synth envelope
+                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                gainNode.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.02);
+                gainNode.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+
+                // Analog style Low-pass filter to sound deep and warm
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(1200, audioCtx.currentTime);
+                filter.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + duration);
+
+                osc.connect(filter);
+                filter.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (err) {
+                // Fail-safe silently if audio context block is triggered by sandbox rules
+            }
+        }
+
+        function rewindToTrimStart() {
+            const startSec = (trimStartPct / 100) * audioDuration;
+            setPlayheadPosition(startSec);
+            triggerSynthPulse(140, 0.1, 'sine');
+            showToast("Rewound playhead to Start Marker.");
+        }
+
+
+        // ========================================================
+        // 6. GENERAL UTILITIES, MODES & AI ACTIONS
+        // ========================================================
+        let currentEditorMode = 'waveform';
+
+        function switchMode(buttonEl, mode) {
+            currentEditorMode = mode;
+            document.querySelectorAll('.mode-tab').forEach(b => b.classList.remove('active'));
+            buttonEl.classList.add('active');
+            
+            drawWaveform(mode);
+            showToast(`Switched view to ${mode.toUpperCase()} ANALYZER.`);
+        }
+
+        function simulateZoom() {
+            showToast("Zooming active workspace view to focused selection area...");
+            // Animate canvas scaling effect
+            waveCanvas.style.transform = 'scaleY(1.15)';
+            setTimeout(() => waveCanvas.style.transform = 'scaleY(1)', 300);
+        }
+
+        function toggleFade(checkbox) {
+            if (checkbox.checked) {
+                showToast("Fades enabled: 50ms Exponential Fade In & Out mapped at boundaries.");
+            } else {
+                showToast("Fades disabled. Instant cuts.");
+            }
+        }
+
+        function aiSnapToBeat() {
+            // Repositions handles to simulated perfect musical blocks
+            trimStartPct = 25.0; // 15 seconds
+            trimEndPct = 75.0;   // 45 seconds (exact 30 seconds / perfect 16 bars)
+            updateTrimOverlays();
+            
+            initAudioContext();
+            triggerSynthPulse(330, 0.3, 'sine');
+            setTimeout(() => triggerSynthPulse(440, 0.3, 'sine'), 120);
+
+            showToast("🤖 AI Scan complete! Bound snap to bars 4-20 (exact 16-bar loop).");
+        }
+
+        function renderAudio() {
+            const start = formatTimestamp((trimStartPct / 100) * audioDuration);
+            const end = formatTimestamp((trimEndPct / 100) * audioDuration);
+            
+            showToast("Rendering audio segment in sandbox memory...");
+            
+            setTimeout(() => {
+                showToast(`🎉 Export Ready! Cut from ${start} to ${end} saved locally.`, 4500);
+            }, 1500);
+        }
+
+        // Beautiful customizable UI Notifications/Toast System
+        let toastTimeout;
+        function showToast(message, duration = 2500) {
+            const toast = document.getElementById('notification');
+            const toastText = document.getElementById('notification-text');
+            
+            toastText.textContent = message;
+            toast.classList.add('active');
+
+            clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('active');
+            }, duration);
+        }
+    </script>
+</body>
+</html>
